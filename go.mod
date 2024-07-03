@@ -1,4 +1,4 @@
-module koit
+module github.com/chuminh2001100/goPractice
 
 go 1.22.0
 
