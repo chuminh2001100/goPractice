@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"mime/multipart"
 
 	// "errors"
 	pb "HelloService" // Import generated code
@@ -39,6 +40,13 @@ type Request23 struct {
 	Name string `json:"name"`
 }
 
+
+type UploadReq struct {
+	file multipart.File
+	check bool
+}
+
+
 type RequestReply struct {
 	Name    string `json:"name"`
 	Address string `json:"address"`
@@ -70,7 +78,7 @@ type Response struct {
 type HelloWorldService interface {
 	SayHello(ctx context.Context, name string) (string, error)
 	SayReply(ctx context.Context, name string) (string, error)
-	UpSertAtt(ctx context.Context, name Request_IDstudent) (string, error)
+	UpSertAtt(ctx context.Context, name string) (string, error)
 }
 
 type loggingMiddleware struct {
@@ -99,8 +107,8 @@ func (s HelloWorldServiceImpl) SayReply(ctx context.Context, name string) (strin
 	return "Hello, " + name + "!" + "Hung" + "Hello" + s.name, nil
 }
 
-func (s HelloWorldServiceImpl) UpSertAtt(ctx context.Context, infor Request_IDstudent) (string, error) {
-	name := "API kafka 1235466665555555"
+func (s HelloWorldServiceImpl) UpSertAtt(ctx context.Context, name string) (string, error) {
+	name123 := "API kafka 1235466665555555"
 	response, err := s.clientGrpc.SayHello(context.Background(), &pb.HelloRequest{Name: name})
 	if err != nil {
 		fmt.Println("un wirelab")
@@ -108,7 +116,7 @@ func (s HelloWorldServiceImpl) UpSertAtt(ctx context.Context, infor Request_IDst
 	}
 	fmt.Printf("Goi rgpc xong roi hehe: %s", response.GetMessage())
 	fmt.Println("There Here")
-	hanldeSerivce := "Hello, " + infor.Class + " " + string(infor.Age) + " " + infor.Name
+	hanldeSerivce := "Hello, " + name123
 	return hanldeSerivce, nil
 }
 
@@ -142,7 +150,7 @@ func (mw loggingMiddleware) SayReply(ctx context.Context, name string) (output s
 	return
 }
 
-func (mw loggingMiddleware) UpSertAtt(ctx context.Context, name Request_IDstudent) (output string, err error) {
+func (mw loggingMiddleware) UpSertAtt(ctx context.Context, name string) (output string, err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log(
 			"method", "Upsert Attributes",
@@ -198,12 +206,12 @@ func SayReplyEndpoint(svc HelloWorldService) endpoint.Endpoint {
 
 func UpsertEndpoint(svc HelloWorldService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req, ok := request.(Request_IDstudent) // Kiểm tra kiểu của request
+		req, ok := request.(UploadReq) // Kiểm tra kiểu của request
 		if !ok {
 			return nil, ErrInvalidRequest
 		}
-
-		greeting, err := svc.UpSertAtt(ctx, req)
+		fmt.Printf("check req: %+v\n", req)
+		greeting, err := svc.UpSertAtt(ctx, "hello em")
 		if err != nil {
 			return nil, err
 		}
@@ -234,7 +242,7 @@ func (mw instrumentingMiddleware) SayReply(ctx context.Context, name string) (ou
 	return
 }
 
-func (mw instrumentingMiddleware) UpSertAtt(ctx context.Context, name Request_IDstudent) (output string, err error) {
+func (mw instrumentingMiddleware) UpSertAtt(ctx context.Context, name string) (output string, err error) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "Upsert Att", "error", fmt.Sprint(err != nil)}
 		mw.requestCount.With(lvs...).Add(1)
@@ -276,14 +284,27 @@ func DecodeRequestReply(_ context.Context, r *http.Request) (interface{}, error)
 
 func DecodeRequestUpsert(_ context.Context, r *http.Request) (interface{}, error) {
 	// Lấy giá trị của tham số "name" từ query string
-	if !strings.Contains(r.Header.Get("Content-Type"), "application/json") {
+	if !strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
 		return nil, errors.New("unsupported content type")
 	}
-	req := Request_IDstudent{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		fmt.Println("Un confirmed")
+	// req := Request_IDstudent{}
+	// if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// 	fmt.Println("Un confirmed")
+	// 	return nil, errors.Wrap(err, "Fail adu vjp")
+	// }
+
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		fmt.Printf("Error file: %s\n", err)
 		return nil, errors.Wrap(err, "Fail adu vjp")
 	}
+    fmt.Printf("In full handler: %+v\n", handler)
+    fmt.Printf("In full file: %+v\n", file)
+	req := UploadReq {
+		file: file,
+		check: true,
+	}
+
 	return req, nil
 }
 

@@ -22,6 +22,8 @@ func New(mc *minio.Client) Service {
 
 type Service interface {
 	CreateBucket(ctx context.Context, bucketName string) error
+	SayHello(ctx context.Context, name string) (string, error)
+	SayReply(ctx context.Context, name string) (string, error)
 }
 
 func (m minioService) CreateBucket(ctx context.Context, bucketName string) error {
@@ -33,4 +35,12 @@ func (m minioService) CreateBucket(ctx context.Context, bucketName string) error
 		return errBucketExists
 	}
 	return m.mClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
+}
+
+func (m minioService) SayHello(ctx context.Context, name string) (string, error) {
+	return "Hello, " + name + "!" + "Thanh" + "Hello" + name, nil
+}
+
+func (m minioService) SayReply(ctx context.Context, name string) (string, error) {
+	return "Hello, " + name + "!" + "Hung" + "Hello" + name, nil
 }
